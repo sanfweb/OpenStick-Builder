@@ -38,14 +38,19 @@ dd if=${TMPDIR}/gpt.img of=files/gpt_both0.bin bs=512 count=34
 dd if=${TMPDIR}/gpt.img bs=512 skip=2 count=32 >> files/gpt_both0.bin
 dd if=${TMPDIR}/gpt.img bs=512 skip=350241 >> files/gpt_both0.bin
 
-# extract Qualcomm firmware (Linaro releases 21.12 переехал -> берём с snapshots)
-FW_URL="https://snapshots.linaro.org/96boards/dragonboard410c/linaro/rescue/latest/dragonboard-410c-bootloader-emmc-linux.zip"
-wget -P ${TMPDIR} -O ${TMPDIR}/db410c-bootloader.zip "${FW_URL}"
-# внутри архива файлы лежат в подпапке dragonboard-410c-bootloader-emmc-linux-*/
-unzip -o -j -d files/ ${TMPDIR}/db410c-bootloader.zip \
-    "*/rpm.mbn" "*/sbl1.mbn" "*/tz.mbn"
-
-
+# Qualcomm firmware (rpm/sbl1/tz) — берём из корня репозитория, без внешних серверов (Linaro нестабилен).
+mkdir -p files/
+for f in rpm.mbn sbl1.mbn tz.mbn; do
+    if [ -f "${f}" ]; then
+        cp "${f}" "files/${f}"
+    elif [ -f "../${f}" ]; then
+        cp "../${f}" "files/${f}"
+    else
+        echo "ERROR: ${f} не найден в корне репозитория — загрузите его"
+        exit 1
+    fi
+done
+echo "Qualcomm firmware (rpm/sbl1/tz) взяты из корня -> files/ — OK"
 cleanup() {
     rm -rf ${TMPDIR}
     exit "$1"
